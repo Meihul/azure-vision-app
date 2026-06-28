@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Azure Vision Explorer</title>
+  <style>
+    /* ── Tokens ── */
+    :root {
+      --green-dark:    #3a7d5a;
+      --green-mid:     #6aab84;
+      --green-light:   #a8d5b5;
+      --green-pale:    #d6eedd;
+      --green-wash:    #eef7f1;
+      --white:         #ffffff;
+      --text-dark:     #1c2e24;
+      --text-mid:      #3d5c48;
+      --text-muted:    #7a9e87;
+      --border:        #c8e4d0;
+      --shadow:        0 2px 16px rgba(58,125,90,0.10);
+    }
+
+    /* ── Reset ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, 'SF Pro Text', 'Helvetica Neue', Arial, sans-serif;
+      background: var(--green-wash);
+      color: var(--text-dark);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── Subtle leaf pattern on body bg ── */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        radial-gradient(circle at 12% 20%, rgba(106,171,132,0.13) 0%, transparent 40%),
+        radial-gradient(circle at 88% 75%, rgba(58,125,90,0.10) 0%, transparent 40%),
+        radial-gradient(circle at 50% 50%, rgba(168,213,181,0.07) 0%, transparent 60%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ── Header ── */
+    header {
+      position: relative; z-index: 1;
+      background: var(--white);
+      border-bottom: 2px solid var(--green-pale);
+      padding: 18px 40px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 2px 8px rgba(58,125,90,0.07);
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .logo-icon {
+      width: 38px; height: 38px;
+      background: linear-gradient(135deg, var(--green-mid), var(--green-dark));
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.2rem;
+    }
+
+    header h1 {
+      font-family: 'Times New Roman', Times, Georgia, serif;
+      font-size: 1.45rem;
+      color: var(--green-dark);
+      font-weight: 700;
+      letter-spacing: -0.3px;
+    }
+
+    .header-badge {
+      font-size: 0.78rem;
+      background: var(--green-pale);
+      color: var(--green-dark);
+      padding: 5px 14px;
+      border-radius: 100px;
+      font-weight: 600;
+      border: 1px solid var(--green-light);
+    }
+
+    /* ── Main two-column layout ── */
+    main {
+      position: relative; z-index: 1;
+      flex: 1;
+      display: grid;
+      grid-template-columns: 420px 1fr;
+      gap: 0;
+      max-width: 1200px;
+      width: 100%;
+      margin: 36px auto;
+      padding: 0 28px;
+      align-items: start;
+    }
+
+    /* ── Left panel ── */
+    .left-panel {
+      background: var(--white);
+      border-radius: 20px 0 0 20px;
+      border: 1.5px solid var(--border);
+      border-right: none;
+      padding: 32px 28px;
+      box-shadow: var(--shadow);
+    }
+
+    .panel-title {
+      font-family: 'Times New Roman', Times, Georgia, serif;
+      font-size: 1.2rem;
+      color: var(--green-dark);
+      margin-bottom: 6px;
+      font-weight: 700;
+    }
+
+    .panel-sub {
+      font-size: 0.83rem;
+      color: var(--text-muted);
+      margin-bottom: 24px;
+      line-height: 1.5;
+    }
+
+    /* Feature tabs */
+    .tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 24px;
+    }
+
+    .tab {
+      padding: 7px 16px;
+      border-radius: 100px;
+      border: 1.5px solid var(--green-light);
+      background: var(--white);
+      color: var(--green-dark);
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.18s;
+    }
+
+    .tab:hover:not(.active) { background: var(--green-wash); }
+
+    .tab.active {
+      background: var(--green-dark);
+      color: var(--white);
+      border-color: var(--green-dark);
+    }
+
+    /* Divider */
+    .divider {
+      height: 1px;
+      background: var(--green-pale);
+      margin: 20px 0;
+    }
+
+    /* Input area */
+    label {
+      display: block;
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: var(--text-mid);
+      margin-bottom: 7px;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+    }
+
+    input[type="text"] {
+      width: 100%;
+      padding: 11px 14px;
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      font-size: 0.93rem;
+      color: var(--text-dark);
+      background: var(--green-wash);
+      transition: border 0.18s, background 0.18s;
+      font-family: inherit;
+    }
+
+    input[type="text"]:focus {
+      outline: none;
+      border-color: var(--green-mid);
+      background: var(--white);
+    }
+
+    input[type="text"]::placeholder { color: var(--text-muted); }
+
+    .input-hint {
+      font-size: 0.76rem;
+      color: var(--text-muted);
+      margin-top: 6px;
+    }
+
+    /* Image preview */
+    #preview {
+      margin: 18px 0;
+      min-height: 0;
+    }
+
+    #preview img {
+      width: 100%;
+      max-height: 220px;
+      object-fit: cover;
+      border-radius: 12px;
+      border: 1.5px solid var(--border);
+      display: block;
+    }
+
+    /* Analyze button */
+    #analyzeBtn {
+      width: 100%;
+      padding: 13px;
+      background: linear-gradient(135deg, var(--green-mid), var(--green-dark));
+      color: var(--white);
+      border: none;
+      border-radius: 12px;
+      font-size: 0.97rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: opacity 0.18s, transform 0.12s;
+      margin-top: 4px;
+      letter-spacing: 0.2px;
+      font-family: inherit;
+    }
+
+    #analyzeBtn:hover { opacity: 0.92; transform: translateY(-1px); }
+    #analyzeBtn:active { transform: translateY(0); }
+    #analyzeBtn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+    /* ── Right panel ── */
+    .right-panel {
+      background: var(--white);
+      border-radius: 0 20px 20px 0;
+      border: 1.5px solid var(--border);
+      border-left: 1.5px solid var(--green-pale);
+      padding: 32px 28px;
+      box-shadow: var(--shadow);
+      min-height: 500px;
+    }
+
+    .right-panel .panel-title { margin-bottom: 4px; }
+
+    /* Empty state */
+    .empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 380px;
+      text-align: center;
+      color: var(--text-muted);
+    }
+
+    .empty-icon {
+      font-size: 3rem;
+      margin-bottom: 16px;
+      opacity: 0.5;
+    }
+
+    .empty-state p {
+      font-size: 0.9rem;
+      line-height: 1.6;
+      max-width: 240px;
+    }
+
+    /* Loader */
+    #loader {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 380px;
+      gap: 16px;
+    }
+
+    .spinner {
+      width: 40px; height: 40px;
+      border: 3px solid var(--green-pale);
+      border-top-color: var(--green-dark);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .loader-text {
+      color: var(--text-muted);
+      font-size: 0.88rem;
+      font-weight: 600;
+    }
+
+    /* Results */
+    #resultsContent { display: none; }
+
+    .result-section {
+      margin-bottom: 24px;
+    }
+
+    .result-section-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 12px;
+      padding-bottom: 8px;
+      border-bottom: 1.5px solid var(--green-pale);
+    }
+
+    .result-section-header h3 {
+      font-family: 'Times New Roman', Times, Georgia, serif;
+      font-size: 1rem;
+      color: var(--green-dark);
+      font-weight: 700;
+    }
+
+    .result-count {
+      font-size: 0.73rem;
+      background: var(--green-pale);
+      color: var(--green-dark);
+      padding: 2px 9px;
+      border-radius: 100px;
+      font-weight: 700;
+    }
+
+    /* Face cards */
+    .face-card {
+      background: var(--green-wash);
+      border: 1.5px solid var(--green-pale);
+      border-radius: 12px;
+      padding: 14px 16px;
+      margin-bottom: 10px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px 16px;
+    }
+
+    .face-card-title {
+      grid-column: 1 / -1;
+      font-weight: 700;
+      font-size: 0.85rem;
+      color: var(--green-dark);
+      margin-bottom: 2px;
+    }
+
+    .face-stat {
+      font-size: 0.83rem;
+      color: var(--text-mid);
+    }
+
+    .face-stat span {
+      font-weight: 700;
+      color: var(--text-dark);
+    }
+
+    /* Tags */
+    .tags-wrap { display: flex; flex-wrap: wrap; gap: 8px; }
+
+    .tag {
+      padding: 6px 14px;
+      border-radius: 100px;
+      font-size: 0.82rem;
+      font-weight: 600;
+    }
+
+    .tag-landmark {
+      background: var(--green-pale);
+      color: var(--green-dark);
+      border: 1px solid var(--green-light);
+    }
+
+    .tag-brand {
+      background: #fffbeb;
+      color: #92610a;
+      border: 1px solid #f6d47e;
+    }
+
+    .tag-desc {
+      background: #f0f4ff;
+      color: #3451a0;
+      border: 1px solid #c2cef8;
+    }
+
+    /* No result */
+    .no-result {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      font-style: italic;
+    }
+
+    /* Error */
+    .error-box {
+      background: #fff5f5;
+      border: 1.5px solid #ffc5c5;
+      border-radius: 12px;
+      padding: 16px;
+      color: #b91c1c;
+      font-size: 0.9rem;
+      font-weight: 600;
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 820px) {
+      main {
+        grid-template-columns: 1fr;
+        padding: 0 16px;
+      }
+      .left-panel { border-radius: 20px 20px 0 0; border-right: 1.5px solid var(--border); border-bottom: none; }
+      .right-panel { border-radius: 0 0 20px 20px; border-left: 1.5px solid var(--border); border-top: none; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon">🔍</div>
+    <h1>Azure Vision Explorer</h1>
+  </div>
+  <span class="header-badge">Azure AI Vision · Demo</span>
+</header>
+
+<main>
+
+  <!-- ── LEFT: Input panel ── -->
+  <div class="left-panel">
+    <p class="panel-title">Analyse an Image</p>
+    <p class="panel-sub">Paste a public image URL below, choose a detection mode, and see what Azure AI Vision finds.</p>
+
+    <div class="tabs">
+      <button class="tab active" data-feature="all">All</button>
+      <button class="tab" data-feature="face">😊 Faces</button>
+      <button class="tab" data-feature="landmark">🗺️ Landmarks</button>
+      <button class="tab" data-feature="brand">🏷️ Brands</button>
+    </div>
+
+    <div class="divider"></div>
+
+    <label for="imageUrl">Image URL</label>
+    <input type="text" id="imageUrl" placeholder="https://example.com/photo.jpg" />
+    <p class="input-hint">Must be a publicly accessible image (JPEG, PNG, BMP, GIF).</p>
+
+    <div id="preview"></div>
+
+    <button id="analyzeBtn">Analyse Image →</button>
+  </div>
+
+  <!-- ── RIGHT: Results panel ── -->
+  <div class="right-panel">
+    <p class="panel-title">Detection Results</p>
+    <p class="panel-sub" style="margin-bottom:20px;">Results will appear here after analysis.</p>
+
+    <div class="empty-state" id="emptyState">
+      <div class="empty-icon">🌿</div>
+      <p>Enter an image URL on the left and click <strong>Analyse Image</strong> to get started.</p>
+    </div>
+
+    <div id="loader">
+      <div class="spinner"></div>
+      <p class="loader-text">Sending to Azure AI Vision…</p>
+    </div>
+
+    <div id="resultsContent"></div>
+  </div>
+
+</main>
+
+<script>
+  // Tab selection
+  const tabs = document.querySelectorAll('.tab');
+  let selectedFeature = 'all';
+  tabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      tabs.forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      selectedFeature = tab.dataset.feature;
+    });
+  });
+
+  // Live image preview
+  document.getElementById('imageUrl').addEventListener('input', function () {
+    const url = this.value.trim();
+    const preview = document.getElementById('preview');
+    if (url) {
+      preview.innerHTML = `<img src="${url}" alt="Preview" style="margin-top:14px;" onerror="this.style.display='none'" />`;
+    } else {
+      preview.innerHTML = '';
+    }
+  });
+
+  // Analyse
+  document.getElementById('analyzeBtn').addEventListener('click', async () => {
+    const imageUrl = document.getElementById('imageUrl').value.trim();
+    if (!imageUrl) { alert('Please enter an image URL first.'); return; }
+
+    const btn        = document.getElementById('analyzeBtn');
+    const loader     = document.getElementById('loader');
+    const empty      = document.getElementById('emptyState');
+    const results    = document.getElementById('resultsContent');
+
+    btn.disabled = true;
+    btn.textContent = 'Analysing…';
+    empty.style.display   = 'none';
+    results.style.display = 'none';
+    loader.style.display  = 'flex';
+
+    try {
+      const response = await fetch('/api/analyze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ imageUrl, feature: selectedFeature })
+      });
+
+      const data = await response.json();
+      loader.style.display  = 'none';
+      results.style.display = 'block';
+
+      if (data.error) {
+        results.innerHTML = `<div class="error-box">❌ ${data.error}</div>`;
+        return;
+      }
+
+      let html = '';
+
+      // ── Faces ──
+      if (selectedFeature === 'all' || selectedFeature === 'face') {
+        const faces = data.faces || [];
+        html += `
+          <div class="result-section">
+            <div class="result-section-header">
+              <h3>😊 Face Detection</h3>
+              <span class="result-count">${faces.length} found</span>
+            </div>`;
+        if (faces.length > 0) {
+          faces.forEach((face, i) => {
+            html += `
+              <div class="face-card">
+                <p class="face-card-title">Face ${i + 1}</p>
+                <p class="face-stat">Age: <span>~${face.age}</span></p>
+                <p class="face-stat">Gender: <span>${face.gender}</span></p>
+                <p class="face-stat">Top: <span>${face.faceRectangle.top}px</span></p>
+                <p class="face-stat">Left: <span>${face.faceRectangle.left}px</span></p>
+              </div>`;
+          });
+        } else {
+          html += `<p class="no-result">No faces detected in this image.</p>`;
+        }
+        html += `</div>`;
+      }
+
+      // ── Landmarks ──
+      if (selectedFeature === 'all' || selectedFeature === 'landmark') {
+        const landmarks = [];
+        if (data.categories) {
+          data.categories.forEach(cat => {
+            if (cat.detail && cat.detail.landmarks) {
+              cat.detail.landmarks.forEach(l => landmarks.push(l));
+            }
+          });
+        }
+        html += `
+          <div class="result-section">
+            <div class="result-section-header">
+              <h3>🗺️ Landmarks</h3>
+              <span class="result-count">${landmarks.length} found</span>
+            </div>
+            <div class="tags-wrap">`;
+        if (landmarks.length > 0) {
+          landmarks.forEach(l => {
+            html += `<span class="tag tag-landmark">${l.name} — ${Math.round(l.confidence * 100)}%</span>`;
+          });
+        } else {
+          html += `<p class="no-result">No landmarks detected.</p>`;
+        }
+        html += `</div></div>`;
+      }
+
+      // ── Brands ──
+      if (selectedFeature === 'all' || selectedFeature === 'brand') {
+        const brands = data.brands || [];
+        html += `
+          <div class="result-section">
+            <div class="result-section-header">
+              <h3>🏷️ Brand Detection</h3>
+              <span class="result-count">${brands.length} found</span>
+            </div>
+            <div class="tags-wrap">`;
+        if (brands.length > 0) {
+          brands.forEach(b => {
+            html += `<span class="tag tag-brand">${b.name} — ${Math.round(b.confidence * 100)}%</span>`;
+          });
+        } else {
+          html += `<p class="no-result">No brands detected.</p>`;
+        }
+        html += `</div></div>`;
+
+        // Description
+        if (data.description && data.description.captions && data.description.captions.length > 0) {
+          html += `
+            <div class="result-section">
+              <div class="result-section-header"><h3>📝 Image Description</h3></div>
+              <div class="tags-wrap">`;
+          data.description.captions.forEach(c => {
+            html += `<span class="tag tag-desc">${c.text} (${Math.round(c.confidence * 100)}%)</span>`;
+          });
+          html += `</div></div>`;
+        }
+      }
+
+      results.innerHTML = html;
+
+    } catch (err) {
+      loader.style.display  = 'none';
+      results.style.display = 'block';
+      results.innerHTML = `<div class="error-box">❌ ${err.message}</div>`;
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Analyse Image →';
+    }
+  });
+</script>
+</body>
+</html>
