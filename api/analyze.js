@@ -19,14 +19,14 @@ module.exports = async (req, res) => {
       return res.status(400).json({ error: 'No image URL provided' });
     }
 
-    // Build the features list based on selected feature
-    let visualFeatures = '';
-    if (feature === 'face') visualFeatures = 'Faces';
-    else if (feature === 'landmark') visualFeatures = 'Categories,Description';
-    else if (feature === 'brand') visualFeatures = 'Brands,Objects';
-    else visualFeatures = 'Faces,Brands,Categories,Description';
+    // Always include Description so we get caption text for context
+    let visualFeatures = 'Description';
+    if (feature === 'face') visualFeatures += ',Faces';
+    else if (feature === 'landmark') visualFeatures += ',Categories';
+    else if (feature === 'brand') visualFeatures += ',Brands,Objects';
+    else visualFeatures += ',Faces,Brands,Categories';
 
-    const endpoint = `${VISION_ENDPOINT}/vision/v3.2/analyze?visualFeatures=${visualFeatures}&language=en`;
+    const endpoint = `${VISION_ENDPOINT}/vision/v3.2/analyze?visualFeatures=${visualFeatures}&details=Landmarks&language=en`;
 
     const response = await fetch(endpoint, {
       method: 'POST',
@@ -40,7 +40,9 @@ module.exports = async (req, res) => {
     const data = await response.json();
 
     if (!response.ok) {
-      return res.status(response.status).json({ error: data.error?.message || 'Azure API error' });
+      return res.status(response.status).json({ 
+        error: data.error?.message || 'Azure API error' 
+      });
     }
 
     return res.status(200).json(data);

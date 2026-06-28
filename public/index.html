@@ -530,30 +530,55 @@
       let html = '';
 
       // ── Faces ──
-      if (selectedFeature === 'all' || selectedFeature === 'face') {
-        const faces = data.faces || [];
-        html += `
-          <div class="result-section">
-            <div class="result-section-header">
-              <h3>😊 Face Detection</h3>
-              <span class="result-count">${faces.length} found</span>
-            </div>`;
-        if (faces.length > 0) {
-          faces.forEach((face, i) => {
-            html += `
-              <div class="face-card">
-                <p class="face-card-title">Face ${i + 1}</p>
-                <p class="face-stat">Age: <span>~${face.age}</span></p>
-                <p class="face-stat">Gender: <span>${face.gender}</span></p>
-                <p class="face-stat">Top: <span>${face.faceRectangle.top}px</span></p>
-                <p class="face-stat">Left: <span>${face.faceRectangle.left}px</span></p>
-              </div>`;
-          });
-        } else {
-          html += `<p class="no-result">No faces detected in this image.</p>`;
-        }
-        html += `</div>`;
-      }
+if (selectedFeature === 'all' || selectedFeature === 'face') {
+  const faces = data.faces || [];
+  const caption = data.description?.captions?.[0]?.text || null;
+  const confidence = data.description?.captions?.[0]?.confidence || null;
+
+  html += `
+    <div class="result-section">
+      <div class="result-section-header">
+        <h3>😊 Face Detection</h3>
+        <span class="result-count">${faces.length} found</span>
+      </div>`;
+
+  if (faces.length > 0) {
+    faces.forEach((face, i) => {
+      const w = face.faceRectangle.width;
+      const h = face.faceRectangle.height;
+      html += `
+        <div class="face-card">
+          <p class="face-card-title">Face ${i + 1}</p>
+          <p class="face-stat">Width: <span>${w}px</span></p>
+          <p class="face-stat">Height: <span>${h}px</span></p>
+          <p class="face-stat">Position (top): <span>${face.faceRectangle.top}px</span></p>
+          <p class="face-stat">Position (left): <span>${face.faceRectangle.left}px</span></p>
+        </div>`;
+    });
+  } else {
+    html += `<p class="no-result">No faces detected in this image.</p>`;
+  }
+
+  // Show AI caption which often describes beard, glasses, clothing
+  if (caption) {
+    html += `
+      <div style="margin-top:14px; padding:12px 16px; background:var(--green-wash); 
+                  border-radius:10px; border:1px solid var(--green-pale);">
+        <p style="font-size:0.78rem;font-weight:700;color:var(--text-muted);
+                  text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">
+          AI Description
+        </p>
+        <p style="font-size:0.9rem;color:var(--text-dark);line-height:1.5;">
+          "${caption}"
+        </p>
+        <p style="font-size:0.75rem;color:var(--text-muted);margin-top:4px;">
+          Confidence: ${Math.round(confidence * 100)}%
+        </p>
+      </div>`;
+  }
+
+  html += `</div>`;
+}
 
       // ── Landmarks ──
       if (selectedFeature === 'all' || selectedFeature === 'landmark') {
